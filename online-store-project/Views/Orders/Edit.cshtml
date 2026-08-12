@@ -1,0 +1,111 @@
+﻿@model online_store_project.Models.OrderEntity
+@{
+    ViewData["Title"] = "Edit Order";
+    var shortId = Model?.RowKey?.Length >= 8 ? Model.RowKey[..8] : Model?.RowKey;
+}
+
+<section class="form-page section-padding">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 col-xl-7">
+
+                <!-- Header -->
+                <div class="mb-4">
+                    <a asp-action="Index" class="btn btn-back mb-3">
+                        <i class="bi bi-arrow-left me-2"></i> Back to Orders
+                    </a>
+                    <h1 class="fw-bold display-6 mb-1">Edit Order</h1>
+                    <p class="text-muted">
+                        Update order <strong>#@shortId</strong>
+                    </p>
+                </div>
+
+                <!-- Form Card -->
+                <div class="card form-card">
+                    <div class="card-body p-4 p-md-5">
+
+                        <form asp-action="Edit" method="post">
+                            <div asp-validation-summary="ModelOnly" class="alert alert-danger rounded-3 mb-4" role="alert"></div>
+
+                            <!-- Critical hidden fields -->
+                            <input type="hidden" asp-for="PartitionKey" />
+                            <input type="hidden" asp-for="RowKey" />
+                            <input type="hidden" asp-for="ETag" />
+
+                            <div class="row g-3">
+
+                                <!-- Customer ID -->
+                                <div class="col-md-6">
+                                    <label asp-for="CustomerId" class="form-label fw-semibold">Customer ID</label>
+                                    <input asp-for="CustomerId" class="form-control form-control-modern" placeholder="Customer RowKey / ID" />
+                                    <span asp-validation-for="CustomerId" class="text-danger small"></span>
+                                </div>
+
+                                <!-- Product ID -->
+                                <div class="col-md-6">
+                                    <label asp-for="ProductId" class="form-label fw-semibold">Product ID</label>
+                                    <input asp-for="ProductId" class="form-control form-control-modern" placeholder="Product RowKey / ID" />
+                                    <span asp-validation-for="ProductId" class="text-danger small"></span>
+                                </div>
+
+                                <!-- Order Date -->
+                                <div class="col-md-6">
+                                    <label asp-for="OrderDate" class="form-label fw-semibold">Order Date</label>
+                                    <input asp-for="OrderDate" type="datetime-local" class="form-control form-control-modern" />
+                                    <span asp-validation-for="OrderDate" class="text-danger small"></span>
+                                </div>
+
+                                <!-- Status -->
+                                <div class="col-md-6">
+                                    <label asp-for="Status" class="form-label fw-semibold">Status</label>
+                                    <select asp-for="Status" class="form-select form-control-modern">
+                                        <option value="Pending">Pending</option>
+                                        <option value="Processing">Processing</option>
+                                        <option value="Shipped">Shipped</option>
+                                        <option value="Delivered">Delivered</option>
+                                        <option value="Completed">Completed</option>
+                                        <option value="Cancelled">Cancelled</option>
+                                    </select>
+                                    <span asp-validation-for="Status" class="text-danger small"></span>
+                                </div>
+
+                                <!-- Quantity -->
+                                <div class="col-md-6">
+                                    <label asp-for="Quantity" class="form-label fw-semibold">Quantity</label>
+                                    <input asp-for="Quantity" type="number" min="1" class="form-control form-control-modern" />
+                                    <span asp-validation-for="Quantity" class="text-danger small"></span>
+                                </div>
+
+                                <!-- Total Price -->
+                                <div class="col-md-6">
+                                    <label asp-for="TotalPrice" class="form-label fw-semibold">Total Price (R)</label>
+                                    <input asp-for="TotalPrice" type="number" min="0" class="form-control form-control-modern" />
+                                    <span asp-validation-for="TotalPrice" class="text-danger small"></span>
+                                </div>
+
+                            </div>
+
+                            <!-- Actions -->
+                            <div class="d-flex flex-wrap gap-3 mt-5">
+                                <button type="submit" class="btn btn-primary-custom text-white rounded-pill px-5">
+                                    <i class="bi bi-check-lg me-2"></i> Save Changes
+                                </button>
+                                <a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4">
+                                    Cancel
+                                </a>
+                            </div>
+                        </form>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

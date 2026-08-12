@@ -1,0 +1,173 @@
+﻿@model online_store_project.Models.ProductEntity
+@{
+    ViewData["Title"] = Model?.ProductName ?? "Product Details";
+}
+
+<section class="product-details-page section-padding">
+    <div class="container">
+
+        <!-- Back Button -->
+        <div class="mb-4">
+            <a asp-action="Index" class="btn btn-back">
+                <i class="bi bi-arrow-left me-2"></i> Back to Products
+            </a>
+        </div>
+
+        @if (Model == null)
+        {
+            <div class="text-center py-5">
+                <i class="bi bi-exclamation-circle display-4 text-muted mb-3 d-block"></i>
+                <h3 class="fw-semibold">Product not found</h3>
+                <p class="text-muted">The product you are looking for does not exist or has been removed.</p>
+                <a asp-action="Index" class="btn btn-primary-custom text-white rounded-pill px-4 mt-3">
+                    Browse Products
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="row g-5 align-items-start">
+
+                <!-- Left: Product Image -->
+                <div class="col-lg-6">
+                    <div class="product-detail-image-wrapper">
+                        <img src="@(string.IsNullOrEmpty(Model.ProductImageUrl)
+                                                    ? "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=900&q=80"
+                                                    : Model.ProductImageUrl)"
+                             alt="@Model.ProductName"
+                             class="product-detail-image"
+                             loading="lazy" />
+                    </div>
+                </div>
+
+                <!-- Right: Product Info -->
+                <div class="col-lg-6">
+                    <div class="product-detail-info">
+
+                        <!-- Stock Badge -->
+                        @if (Model.StockQuantity <= 0)
+                        {
+                            <span class="badge-stock out-of-stock">Out of Stock</span>
+                        }
+                        else if (Model.StockQuantity <= 5)
+                        {
+                            <span class="badge-stock low-stock">Only @Model.StockQuantity left</span>
+                        }
+                        else
+                        {
+                            <span class="badge-stock in-stock">In Stock</span>
+                        }
+
+                        <!-- Title & Price -->
+                        <h1 class="product-detail-title">@Model.ProductName</h1>
+                        <div class="product-detail-price">R @Model.ProductPrice</div>
+
+                        <!-- Description -->
+                        <div class="product-detail-description">
+                            <h6 class="fw-semibold mb-2">Description</h6>
+                            <p class="text-muted">
+                                @(string.IsNullOrEmpty(Model.ProductDescription)
+                                    ? "No description available for this product."
+                                    : Model.ProductDescription)
+                            </p>
+                        </div>
+
+                        <!-- Extra Info -->
+                        <div class="product-meta mb-4">
+                            <div class="meta-item">
+                                <i class="bi bi-box-seam"></i>
+                                <span>Stock Quantity: <strong>@Model.StockQuantity</strong></span>
+                            </div>
+                            <div class="meta-item">
+                                <i class="bi bi-hash"></i>
+                                <span>SKU: <strong>@Model.RowKey?[..8]</strong></span>
+                            </div>
+                        </div>
+                        @{
+                            var userFirstName = Context.Session.GetString("UserFirstName");
+                            var isLoggedIn = !string.IsNullOrEmpty(userFirstName);
+                        }
+                        <!-- Quantity + Add to Cart -->
+                        @if (Model.StockQuantity > 0)
+                        {
+
+                            <form asp-controller="Orders" asp-action="Create" method="post" class="add-to-cart-form">
+                                <input type="hidden" name="productId" value="@Model.RowKey" />
+                                <input type="hidden" name="productName" value="@Model.ProductName" />
+                                <input type="hidden" name="totalPrice" value="@Model.ProductPrice" />
+                                <input type="hidden" name="customerId" value="@userFirstName" />
+                                <input type="hidden" name="quantity" value="1" />
+
+                                <div class="d-flex flex-wrap align-items-center gap-3 mb-4">
+                                    <div class="quantity-selector">
+                                        <button type="button" class="qty-btn" onclick="changeQty(-1)">−</button>
+                                        <input type="number" name="quantity" id="quantity" value="1" min="1" max="@Model.StockQuantity" />
+                                        <button type="button" class="qty-btn" onclick="changeQty(1)">+</button>
+                                    </div>
+
+                                    <button type="submit" class="btn btn-add-to-cart">
+                                        <i class="bi bi-cart-plus me-2"></i>
+                                        Add to Cart
+                                    </button>
+                                </div>
+                            </form>
+                        }
+                        else
+                        {
+                            <button class="btn btn-add-to-cart disabled" disabled>
+                                Currently Unavailable
+                            </button>
+                        }
+                        
+                        @{
+                            if (userFirstName == "Admin")
+                            {
+                                <!-- Admin Actions (optional – remove if not needed for customers) -->
+                                <div class="admin-actions mt-5 pt-4 border-top">
+                                    <p class="small text-muted mb-2">Admin options</p>
+                                    <div class="d-flex gap-2">
+                                        <a asp-action="Edit"
+                                           asp-route-partitionKey="@Model.PartitionKey"
+                                           asp-route-rowKey="@Model.RowKey"
+                                           class="btn btn-sm btn-outline-secondary rounded-pill">
+                                            <i class="bi bi-pencil me-1"></i> Edit
+                                        </a>
+                                        <form asp-action="Delete" method="post" class="d-inline"
+                                              onsubmit="return confirm('Are you sure you want to delete this product?');">
+                                            <input type="hidden" name="partitionKey" value="@Model.PartitionKey" />
+                                            <input type="hidden" name="rowKey" value="@Model.RowKey" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill">
+                                                <i class="bi bi-trash me-1"></i> Delete
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        
+
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        function changeQty(delta) {
+            const input = document.getElementById('quantity');
+            if (!input) return;
+
+            let value = parseInt(input.value) || 1;
+            const max = parseInt(input.max) || 99;
+            const min = parseInt(input.min) || 1;
+
+            value += delta;
+            if (value < min) value = min;
+            if (value > max) value = max;
+
+            input.value = value;
+        }
+    </script>
+}

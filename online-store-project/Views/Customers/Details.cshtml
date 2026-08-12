@@ -1,0 +1,185 @@
+﻿@model online_store_project.Models.CustomerEntity
+@{
+    ViewData["Title"] = "Customer Details";
+    var fullName = $"{Model?.FirstName} {Model?.LastName}".Trim();
+    if (string.IsNullOrWhiteSpace(fullName))
+    {
+        fullName = "Unnamed Customer";
+    }
+}
+
+<section class="customer-details-page section-padding">
+    <div class="container">
+
+        <!-- Back Button -->
+        <div class="mb-4">
+            <a asp-action="Index" class="btn btn-back">
+                <i class="bi bi-arrow-left me-2"></i> Back to Customers
+            </a>
+        </div>
+
+        @if (Model == null)
+        {
+            <div class="text-center py-5">
+                <i class="bi bi-exclamation-circle display-4 text-muted mb-3 d-block"></i>
+                <h3 class="fw-semibold">Customer not found</h3>
+                <p class="text-muted">The customer you are looking for does not exist or has been removed.</p>
+                <a asp-action="Index" class="btn btn-primary-custom text-white rounded-pill px-4 mt-3">
+                    Back to Customers
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+
+                    <div class="card customer-detail-card">
+                        <div class="card-body p-4 p-md-5">
+
+                            <!-- Header with Photo + Name -->
+                            <div class="d-flex flex-column flex-md-row align-items-center gap-4 mb-5">
+                                <div class="customer-detail-avatar">
+                                    @if (!string.IsNullOrEmpty(Model.PhotoUrl))
+                                    {
+                                        <img src="@Model.PhotoUrl" alt="@fullName" />
+                                    }
+                                    else
+                                    {
+                                        <span class="avatar-placeholder-lg">
+                                            @(string.IsNullOrEmpty(Model.FirstName)
+                                                ? "?"
+                                                : Model.FirstName[0].ToString().ToUpper())
+                                        </span>
+                                    }
+                                </div>
+
+                                <div class="text-center text-md-start">
+                                    <h1 class="fw-bold mb-1">@fullName</h1>
+                                    <p class="text-muted mb-0">
+                                        Customer ID:
+                                        <code class="small">@(Model.RowKey?.Length >= 8 ? Model.RowKey[..8] : Model.RowKey)</code>
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Details Grid -->
+                            <div class="row g-4">
+                                <!-- Email -->
+                                <div class="col-md-6">
+                                    <div class="detail-item">
+                                        <div class="detail-label">
+                                            <i class="bi bi-envelope"></i> Email Address
+                                        </div>
+                                        <div class="detail-value">
+                                            @if (!string.IsNullOrEmpty(Model.Email))
+                                            {
+                                                <a href="mailto:@Model.Email">@Model.Email</a>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">Not provided</span>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Phone -->
+                                <div class="col-md-6">
+                                    <div class="detail-item">
+                                        <div class="detail-label">
+                                            <i class="bi bi-telephone"></i> Phone Number
+                                        </div>
+                                        <div class="detail-value">
+                                            @if (!string.IsNullOrEmpty(Model.PhoneNumber))
+                                            {
+                                                @Model.PhoneNumber
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">Not provided</span>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- First Name -->
+                                <div class="col-md-6">
+                                    <div class="detail-item">
+                                        <div class="detail-label">
+                                            <i class="bi bi-person"></i> First Name
+                                        </div>
+                                        <div class="detail-value">
+                                            @(Model.FirstName ?? "—")
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Last Name -->
+                                <div class="col-md-6">
+                                    <div class="detail-item">
+                                        <div class="detail-label">
+                                            <i class="bi bi-person"></i> Last Name
+                                        </div>
+                                        <div class="detail-value">
+                                            @(Model.LastName ?? "—")
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Partition Key (technical) -->
+                                <div class="col-md-6">
+                                    <div class="detail-item">
+                                        <div class="detail-label">
+                                            <i class="bi bi-key"></i> Partition Key
+                                        </div>
+                                        <div class="detail-value">
+                                            <code class="small">@Model.PartitionKey</code>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Row Key (technical) -->
+                                <div class="col-md-6">
+                                    <div class="detail-item">
+                                        <div class="detail-label">
+                                            <i class="bi bi-key"></i> Row Key
+                                        </div>
+                                        <div class="detail-value">
+                                            <code class="small text-break">@Model.RowKey</code>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="d-flex flex-wrap gap-3 mt-5 pt-4 border-top">
+                                <a asp-action="Edit"
+                                   asp-route-partitionKey="@Model.PartitionKey"
+                                   asp-route-rowKey="@Model.RowKey"
+                                   class="btn btn-primary-custom text-white rounded-pill px-4">
+                                    <i class="bi bi-pencil me-2"></i> Edit Customer
+                                </a>
+
+                                <form asp-action="Delete" method="post" class="d-inline"
+                                      onsubmit="return confirm('Are you sure you want to delete this customer? This action cannot be undone.');">
+                                    <input type="hidden" name="partitionKey" value="@Model.PartitionKey" />
+                                    <input type="hidden" name="rowKey" value="@Model.RowKey" />
+                                    <button type="submit" class="btn btn-outline-danger rounded-pill px-4">
+                                        <i class="bi bi-trash me-2"></i> Delete
+                                    </button>
+                                </form>
+
+                                <a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4">
+                                    Back to List
+                                </a>
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        }
+    </div>
+</section>

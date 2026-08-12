@@ -1,0 +1,71 @@
+﻿@{
+    ViewData["Title"] = "Home";
+}
+
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <div class="hero-content">
+            <h1>Discover products that elevate everyday life</h1>
+            <p class="lead">
+                Thoughtfully designed items for modern living. Quality you can feel, style that lasts.
+            </p>
+            <div class="d-flex flex-wrap gap-3">
+                <a asp-controller="Products" asp-action="Index" class="btn btn-hero btn-hero-primary">
+                    Shop Collection <i class="bi bi-arrow-right ms-2"></i>
+                </a>
+                <a href="#featured" class="btn btn-hero btn-hero-outline">
+                    Explore Featured
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Featured / Welcome Section -->
+<section class="section-padding" id="featured">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold display-6 mb-3">Why shop with us?</h2>
+            <p class="text-muted mx-auto" style="max-width: 560px;">
+                We carefully select every product so you can shop with confidence and style.
+            </p>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="bi bi-truck"></i>
+                    </div>
+                    <h5 class="fw-semibold">Fast & Free Shipping</h5>
+                    <p class="text-muted mb-0">Free delivery on orders over $50. Most items arrive within 2–4 days.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="bi bi-shield-check"></i>
+                    </div>
+                    <h5 class="fw-semibold">Quality Guaranteed</h5>
+                    <p class="text-muted mb-0">Every product is vetted for durability and design. 30-day returns.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="bi bi-heart"></i>
+                    </div>
+                    <h5 class="fw-semibold">Curated Selection</h5>
+                    <p class="text-muted mb-0">Only the best. No clutter — just pieces you'll love using every day.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-5">
+            <a asp-controller="Products" asp-action="Index" class="btn btn-primary-custom btn-lg text-white">
+                Browse All Products
+            </a>
+        </div>
+    </div>
+</section>

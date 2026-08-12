@@ -1,0 +1,425 @@
+﻿@model IEnumerable<online_store_project.Models.ProductEntity>
+
+@{
+    ViewData["Title"] = "Products";
+
+    var userFirstName = Context.Session.GetString("UserFirstName");
+    var isLoggedIn = !string.IsNullOrEmpty(userFirstName);
+    var isAdmin = isLoggedIn && userFirstName == "Admin";
+}
+
+<section class="products-page section-padding">
+    <div class="container">
+
+        <!-- Page Header -->
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-5 gap-3">
+
+            <div>
+                @if (isAdmin)
+                {
+                    <h1 class="fw-bold display-6 mb-2">Product Management</h1>
+                    <p class="text-muted mb-0">
+                        Manage products, prices and product information.
+                    </p>
+                }
+                else
+                {
+                    <h1 class="fw-bold display-6 mb-2">Our Collection</h1>
+                    <p class="text-muted mb-0">
+                        Discover carefully selected products for modern living.
+                    </p>
+                }
+            </div>
+
+            <div class="d-flex gap-2">
+
+                <!-- Sort -->
+                <select class="form-select form-select-sm rounded-pill px-3"
+                        style="width: auto;">
+                    <option selected>Sort by: Featured</option>
+                    <option>Price: Low to High</option>
+                    <option>Price: High to Low</option>
+                    <option>Newest</option>
+                </select>
+
+                <!-- Admin New Product -->
+                @if (isAdmin)
+                {
+                    <a asp-action="Create"
+                       asp-controller="Products"
+                       class="btn btn-admin rounded-pill px-4">
+
+                        <i class="bi bi-plus-lg me-1"></i>
+                        New Product
+
+                    </a>
+                }
+
+            </div>
+        </div>
+
+
+        @if (Model != null && Model.Any())
+        {
+
+            @* =========================================================
+               ADMIN PRODUCT TABLE
+               ========================================================= *@
+
+            @if (isAdmin)
+            {
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+
+                    <div class="card-body p-0">
+
+                        <div class="table-responsive">
+
+                            <table class="table table-hover align-middle mb-0">
+
+                                <thead class="table-light">
+
+                                    <tr>
+
+                                        <th class="px-4 py-3">
+                                            #
+                                        </th>
+
+                                        <th class="py-3">
+                                            Product
+                                        </th>
+
+                                        <th class="py-3">
+                                            Description
+                                        </th>
+
+                                        <th class="py-3">
+                                            Price
+                                        </th>
+
+                                        <th class="py-3">
+                                            Product ID
+                                        </th>
+
+                                        <th class="text-end px-4 py-3">
+                                            Admin Functions
+                                        </th>
+
+                                    </tr>
+
+                                </thead>
+
+                                <tbody>
+
+                                    @{
+                                        var counter = 1;
+                                    }
+
+                                    @foreach (var product in Model)
+                                    {
+                                        <tr>
+
+                                            <!-- Number -->
+                                            <td class="px-4 text-muted">
+                                                @counter
+                                            </td>
+
+
+                                            <!-- Product -->
+                                            <td>
+
+                                                <div class="d-flex align-items-center gap-3">
+
+                                                    <div class="product-table-image">
+
+                                                        <img src="@(string.IsNullOrEmpty(product.ProductImageUrl)
+                                                                                                                    ? "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=150&q=80"
+                                                                                                                    : product.ProductImageUrl)"
+                                                             alt="@product.ProductName" />
+
+                                                    </div>
+
+                                                    <div>
+
+                                                        <div class="fw-semibold">
+                                                            @product.ProductName
+                                                        </div>
+
+                                                        <small class="text-muted">
+                                                            Product
+                                                        </small>
+
+                                                    </div>
+
+                                                </div>
+
+                                            </td>
+
+
+                                            <!-- Description -->
+                                            <td>
+
+                                                <span class="product-table-description">
+
+                                                    @(string.IsNullOrEmpty(product.ProductDescription)
+                                                        ? "No description available"
+                                                        : product.ProductDescription.Length > 70
+                                                            ? product.ProductDescription.Substring(0, 70) + "..."
+                                                            : product.ProductDescription)
+
+                                                </span>
+
+                                            </td>
+
+
+                                            <!-- Price -->
+                                            <td>
+
+                                                <span class="fw-semibold">
+                                                    R @product.ProductPrice.ToString("F2")
+                                                </span>
+
+                                            </td>
+
+
+                                            <!-- Product ID -->
+                                            <td>
+
+                                                <span class="badge bg-light text-dark border">
+                                                    @product.RowKey
+                                                </span>
+
+                                            </td>
+
+
+                                            <!-- Admin Functions -->
+                                            <td class="text-end px-4">
+
+                                                <div class="d-flex justify-content-end gap-2">
+
+                                                    <!-- Details -->
+                                                    <a href="@Url.Action("Details", new
+                                                       {
+                                                           partitionKey = product.PartitionKey,
+                                                           rowKey = product.RowKey
+                                                       })"
+                                                       class="btn btn-sm btn-outline-secondary rounded-pill">
+
+                                                        <i class="bi bi-eye me-1"></i>
+                                                        Details
+
+                                                    </a>
+
+
+                                                    <!-- Edit -->
+                                                    <a href="@Url.Action("Edit", new
+                                                       {
+                                                           partitionKey = product.PartitionKey,
+                                                           rowKey = product.RowKey
+                                                       })"
+                                                       class="btn btn-sm btn-outline-primary rounded-pill">
+
+                                                        <i class="bi bi-pencil me-1"></i>
+                                                        Edit
+
+                                                    </a>
+
+
+                                                    <!-- Delete -->
+                                                    <a href="@Url.Action("Delete", new
+                                                       {
+                                                           partitionKey = product.PartitionKey,
+                                                           rowKey = product.RowKey
+                                                       })"
+                                                       class="btn btn-sm btn-outline-danger rounded-pill">
+
+                                                        <i class="bi bi-trash me-1"></i>
+                                                        Delete
+
+                                                    </a>
+
+                                                </div>
+
+                                            </td>
+
+                                        </tr>
+
+                                        counter++;
+                                    }
+
+                                </tbody>
+
+                            </table>
+
+                        </div>
+
+                    </div>
+
+                </div>
+            }
+
+
+            @* =========================================================
+               NORMAL USER PRODUCT CARDS
+               ========================================================= *@
+
+            else
+            {
+                <div class="row g-4">
+
+                    @foreach (var product in Model)
+                    {
+                        <div class="col-sm-6 col-lg-4 col-xl-3">
+
+                            <div class="product-card h-100">
+
+                                <!-- Image -->
+                                <div class="product-image-wrapper">
+
+                                    <img src="@(string.IsNullOrEmpty(product.ProductImageUrl)
+                                                                            ? "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&q=80"
+                                                                            : product.ProductImageUrl)"
+                                         alt="@product.ProductName"
+                                         class="product-image" />
+
+                                    <div class="product-badge">
+                                        New
+                                    </div>
+
+                                </div>
+
+
+                                <!-- Body -->
+                                <div class="product-body">
+
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+
+                                        <h5 class="product-title mb-0">
+                                            @product.ProductName
+                                        </h5>
+
+                                        <span class="product-price">
+                                            R @product.ProductPrice.ToString("F2")
+                                        </span>
+
+                                    </div>
+
+
+                                    <p class="product-description text-muted">
+
+                                        @(product.ProductDescription?.Length > 80
+                                            ? product.ProductDescription.Substring(0, 80) + "..."
+                                            : product.ProductDescription)
+
+                                    </p>
+
+
+                                    <!-- Actions -->
+                                    <div class="product-actions mt-auto">
+
+                                        @if (!isLoggedIn)
+                                        {
+                                            <a href="@Url.Action("UserLogin", "Authentication")"
+                                               class="btn btn-add-cart">
+
+                                                <i class="bi bi-cart-plus me-1"></i>
+                                                Add to Cart
+
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <form asp-controller="Orders"
+                                                  asp-action="Create"
+                                                  method="post"
+                                                  class="d-inline">
+
+                                                <input type="hidden"
+                                                       name="productId"
+                                                       value="@product.RowKey" />
+
+                                                <input type="hidden"
+                                                       name="productName"
+                                                       value="@product.ProductName" />
+
+                                                <input type="hidden"
+                                                       name="totalPrice"
+                                                       value="@product.ProductPrice" />
+
+                                                <input type="hidden"
+                                                       name="customerId"
+                                                       value="@userFirstName" />
+
+                                                <input type="hidden"
+                                                       name="quantity"
+                                                       value="1" />
+
+                                                <button type="submit"
+                                                        class="btn btn-add-cart">
+
+                                                    <i class="bi bi-cart-plus me-1"></i>
+                                                    Add to Cart
+
+                                                </button>
+
+                                            </form>
+                                        }
+
+
+                                        <!-- Details -->
+                                        <a href="@Url.Action("Details", new
+                                           {
+                                               partitionKey = product.PartitionKey,
+                                               rowKey = product.RowKey
+                                           })"
+                                           class="btn btn-details">
+
+                                            Details
+
+                                        </a>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+                    }
+
+                </div>
+            }
+
+        }
+        else
+        {
+            <!-- Empty State -->
+
+            <div class="text-center py-5">
+
+                <i class="bi bi-box-seam display-4 text-muted mb-3 d-block"></i>
+
+                <h4 class="fw-semibold">
+                    No products found
+                </h4>
+
+                <p class="text-muted mb-4">
+                    There are currently no products available.
+                </p>
+
+                @if (isAdmin)
+                {
+                    <a asp-action="Create"
+                       asp-controller="Products"
+                       class="btn btn-admin rounded-pill px-4">
+
+                        <i class="bi bi-plus-lg me-1"></i>
+                        Add Product
+
+                    </a>
+                }
+
+            </div>
+        }
+
+    </div>
+</section>

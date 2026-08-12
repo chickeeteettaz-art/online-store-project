@@ -1,0 +1,111 @@
+﻿@model online_store_project.Models.QueueMessage
+@{
+    ViewData["Title"] = "Send Queue Message";
+}
+
+<section class="form-page section-padding">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 col-xl-7">
+
+                <!-- Header -->
+                <div class="mb-4">
+                    <a asp-action="Index" class="btn btn-back mb-3">
+                        <i class="bi bi-arrow-left me-2"></i> Back to Queue
+                    </a>
+                    <h1 class="fw-bold display-6 mb-1">Send Message</h1>
+                    <p class="text-muted">Create a new message and push it to Azure Queue Storage.</p>
+                </div>
+
+                <!-- Form Card -->
+                <div class="card form-card">
+                    <div class="card-body p-4 p-md-5">
+
+                        <form asp-action="Send" method="post">
+                            <div asp-validation-summary="ModelOnly" class="alert alert-danger rounded-3 mb-4" role="alert"></div>
+
+                            <div class="row g-3">
+
+                                <!-- Message Type -->
+                                <div class="col-md-6">
+                                    <label asp-for="Type" class="form-label fw-semibold">Message Type</label>
+                                    <select asp-for="Type" class="form-select form-control-modern">
+                                        <option value="">-- Select type --</option>
+                                        <option value="OrderCreated">Order Created</option>
+                                        <option value="OrderUpdated">Order Updated</option>
+                                        <option value="OrderCancelled">Order Cancelled</option>
+                                        <option value="StockUpdate">Stock Update</option>
+                                        <option value="Test">Test</option>
+                                    </select>
+                                    <span asp-validation-for="Type" class="text-danger small"></span>
+                                </div>
+
+                                <!-- Order ID -->
+                                <div class="col-md-6">
+                                    <label asp-for="OrderId" class="form-label fw-semibold">Order ID</label>
+                                    <input asp-for="OrderId" class="form-control form-control-modern" placeholder="Order RowKey" />
+                                    <span asp-validation-for="OrderId" class="text-danger small"></span>
+                                </div>
+
+                                <!-- Customer ID -->
+                                <div class="col-md-6">
+                                    <label asp-for="CustomerId" class="form-label fw-semibold">Customer ID</label>
+                                    <input asp-for="CustomerId" class="form-control form-control-modern" placeholder="Customer RowKey" />
+                                    <span asp-validation-for="CustomerId" class="text-danger small"></span>
+                                </div>
+
+                                <!-- Product ID -->
+                                <div class="col-md-6">
+                                    <label asp-for="ProductId" class="form-label fw-semibold">Product ID</label>
+                                    <input asp-for="ProductId" class="form-control form-control-modern" placeholder="Product RowKey" />
+                                    <span asp-validation-for="ProductId" class="text-danger small"></span>
+                                </div>
+
+                                <!-- Quantity -->
+                                <div class="col-md-6">
+                                    <label asp-for="Quantity" class="form-label fw-semibold">Quantity</label>
+                                    <input asp-for="Quantity" type="number" min="1" class="form-control form-control-modern" />
+                                    <span asp-validation-for="Quantity" class="text-danger small"></span>
+                                </div>
+
+                                <!-- Total Price -->
+                                <div class="col-md-6">
+                                    <label asp-for="TotalPrice" class="form-label fw-semibold">Total Price (R)</label>
+                                    <input asp-for="TotalPrice" type="number" min="0" class="form-control form-control-modern" />
+                                    <span asp-validation-for="TotalPrice" class="text-danger small"></span>
+                                </div>
+
+                                <!-- Additional Info -->
+                                <div class="col-12">
+                                    <label asp-for="AdditionalInfo" class="form-label fw-semibold">Additional Info</label>
+                                    <textarea asp-for="AdditionalInfo" class="form-control form-control-modern" rows="3"
+                                              placeholder="Optional notes or extra details..."></textarea>
+                                    <span asp-validation-for="AdditionalInfo" class="text-danger small"></span>
+                                </div>
+
+                            </div>
+
+                            <!-- Actions -->
+                            <div class="d-flex flex-wrap gap-3 mt-5">
+                                <button type="submit" class="btn btn-primary-custom text-white rounded-pill px-5">
+                                    <i class="bi bi-send me-2"></i> Send to Queue
+                                </button>
+                                <a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4">
+                                    Cancel
+                                </a>
+                            </div>
+                        </form>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

@@ -1,0 +1,139 @@
+﻿@{
+    ViewData["Title"] = "Upload File";
+}
+
+<section class="form-page section-padding">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-7 col-xl-6">
+
+                <!-- Header -->
+                <div class="mb-4">
+                    <a asp-action="Index" class="btn btn-back mb-3">
+                        <i class="bi bi-arrow-left me-2"></i> Back to Files
+                    </a>
+                    <h1 class="fw-bold display-6 mb-1">Upload File</h1>
+                    <p class="text-muted">Select a file to upload to Azure File Share.</p>
+                </div>
+
+                <!-- Form Card -->
+                <div class="card form-card">
+                    <div class="card-body p-4 p-md-5">
+
+                        <form asp-action="Upload" method="post" enctype="multipart/form-data">
+                            <div asp-validation-summary="ModelOnly" class="alert alert-danger rounded-3 mb-4" role="alert"></div>
+
+                            <!-- Upload Zone -->
+                            <div class="upload-zone mb-4" id="uploadZone">
+                                <div class="upload-zone-content text-center">
+                                    <div class="upload-icon mb-3">
+                                        <i class="bi bi-cloud-arrow-up"></i>
+                                    </div>
+                                    <h5 class="fw-semibold mb-2">Drag & drop your file here</h5>
+                                    <p class="text-muted small mb-3">or click to browse</p>
+
+                                    <input type="file"
+                                           name="file"
+                                           id="fileInput"
+                                           class="d-none"
+                                           required />
+
+                                    <button type="button" class="btn btn-outline-primary rounded-pill px-4"
+                                            onclick="document.getElementById('fileInput').click()">
+                                        Choose File
+                                    </button>
+                                </div>
+
+                                <!-- Selected file preview -->
+                                <div id="filePreview" class="file-preview d-none mt-3">
+                                    <div class="d-flex align-items-center gap-3 p-3 bg-light rounded-3">
+                                        <i class="bi bi-file-earmark fs-3 text-primary"></i>
+                                        <div class="flex-grow-1 overflow-hidden">
+                                            <div class="fw-semibold text-truncate" id="fileName"></div>
+                                            <div class="small text-muted" id="fileSize"></div>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-link text-danger" onclick="clearFile()">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Actions -->
+                            <div class="d-flex flex-wrap gap-3">
+                                <button type="submit" class="btn btn-primary-custom text-white rounded-pill px-5" id="uploadBtn" disabled>
+                                    <i class="bi bi-cloud-upload me-2"></i> Upload File
+                                </button>
+                                <a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4">
+                                    Cancel
+                                </a>
+                            </div>
+                        </form>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const uploadZone = document.getElementById('uploadZone');
+        const filePreview = document.getElementById('filePreview');
+        const fileNameEl = document.getElementById('fileName');
+        const fileSizeEl = document.getElementById('fileSize');
+        const uploadBtn = document.getElementById('uploadBtn');
+
+        uploadZone.addEventListener('click', (e) => {
+            if (e.target.closest('button') || e.target.closest('#filePreview')) return;
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                showPreview(this.files[0]);
+            }
+        });
+
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                fileInput.files = e.dataTransfer.files;
+                showPreview(e.dataTransfer.files[0]);
+            }
+        });
+
+        function showPreview(file) {
+            fileNameEl.textContent = file.name;
+            fileSizeEl.textContent = formatSize(file.size);
+            filePreview.classList.remove('d-none');
+            uploadBtn.disabled = false;
+        }
+
+        function clearFile() {
+            fileInput.value = '';
+            filePreview.classList.add('d-none');
+            uploadBtn.disabled = true;
+        }
+
+        function formatSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+    </script>
+}

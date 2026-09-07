@@ -5,6 +5,7 @@ using Microsoft.Azure.Functions.Worker.OpenTelemetry;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using OpenTelemetry;
+using OrderTableFunction.Services;
 
 var builder = FunctionsApplication.CreateBuilder(args);
 
@@ -17,4 +18,5 @@ if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("APPLICATIONINSIGHT
         .UseAzureMonitorExporter();
 }
 
+builder.Services.AddSingleton<OrderTableService>();
 builder.Build().Run();

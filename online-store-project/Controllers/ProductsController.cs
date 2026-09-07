@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using online_store_project.Models;
 using online_store_project.Services.BlobStorageServices;
+using online_store_project.Services.QueueServices;
 using online_store_project.Services.TableServices;
 
 namespace online_store_project.Controllers
@@ -9,11 +10,13 @@ namespace online_store_project.Controllers
     {
         private readonly ProductTableService _tableService;
         private readonly IBlobStorageService _blobService;
+        private readonly QueueService _queueService;
 
-        public ProductsController(ProductTableService tableService, IBlobStorageService blobService)
+        public ProductsController(ProductTableService tableService, IBlobStorageService blobService, QueueService queueService)
         {
             _tableService = tableService;
             _blobService = blobService;
+            _queueService = queueService;
         }
 
         [HttpGet]
@@ -22,6 +25,7 @@ namespace online_store_project.Controllers
             var products = _tableService.GetAllProductEntitiesAsync().Result;
             return View(products);
         }
+
         [HttpGet]
         public IActionResult Create()
         {
@@ -51,7 +55,19 @@ namespace online_store_project.Controllers
                     }
 
                     await _tableService.AddorUpdateProductEntityAsync(productEntity);
+                    await _queueService.SendMessageAsync(new QueueMessage
+                    {
+                        Type = "ProductCreated",                        
+                        ProductId = productEntity.RowKey,
+                        CreatedAt = DateTime.UtcNow,
+                        CustomerId = "AdminUser",
+                        Quantity = productEntity.StockQuantity,
+                        TotalPrice = productEntity.ProductPrice * productEntity.StockQuantity,
+                        AdditionalInfo = $"Product '{productEntity.ProductName}' created with quantity {productEntity.StockQuantity}."
+
+                    });
                     return RedirectToAction("Index");
+
                 }
                 return View(productEntity);
             }

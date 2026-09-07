@@ -9,7 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 
 // ===== SESSION SETUP =====
-builder.Services.AddDistributedMemoryCache();          // required
+builder.Services.AddDistributedMemoryCache();         
 builder.Services.AddSession(options =>
 {
     options.IdleTimeout = TimeSpan.FromHours(2);
@@ -17,12 +17,25 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
 });
 
-builder.Services.AddSingleton<TableService>();
-builder.Services.AddSingleton<ProductTableService>();
+builder.Services.AddHttpClient<TableService>();
+builder.Services.AddHttpClient<ProductTableService>();
 builder.Services.AddSingleton<OrderTableService>();
-builder.Services.AddSingleton<ProductFileService>();
-builder.Services.AddSingleton<QueueService>();
-builder.Services.AddSingleton<IBlobStorageService, ImageStorageService>();
+builder.Services.AddHttpClient<ProductFileService>();
+builder.Services.AddHttpClient<QueueService>();
+builder.Services.AddHttpClient();
+builder.Services.AddHttpClient<IBlobStorageService, ImageStorageService>(client =>
+{
+    var baseUrl = builder.Configuration["AzureFunctions:BaseUrl"];
+    if (string.IsNullOrEmpty(baseUrl))
+    {
+        baseUrl = "http://localhost:7063/";
+    }
+
+    client.BaseAddress = new Uri(baseUrl);
+});
+
+
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

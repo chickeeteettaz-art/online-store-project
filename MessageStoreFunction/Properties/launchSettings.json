@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "MessageStoreFunction": {
+      "commandName": "Project",
+      "commandLineArgs": "--port 7194",
+      "launchBrowser": false
+    }
+  }
+}

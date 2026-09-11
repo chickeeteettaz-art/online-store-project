@@ -1,119 +1,65 @@
-﻿using Azure;
-using Azure.Storage.Queues;
-using Azure.Storage.Queues.Models;
-using System.Text;
+﻿using System.Text;
 using System.Text.Json;
-using online_store_project.Models;
 
 namespace online_store_project.Services.QueueServices
 {
     public class QueueService
     {
-        private readonly QueueClient _queueClient;
+        private readonly HttpClient _httpClient;
+        private readonly JsonSerializerOptions _jsonOptions;
 
-        public QueueService(IConfiguration configuration)
+        public QueueService(HttpClient httpClient, IConfiguration configuration)
         {
-            var connectionString = configuration["AzureStorage:connectionString"];
-            var queueName = configuration["AzureStorage:QueueName"] ?? "order-queue";
+            _httpClient = httpClient;
 
-            _queueClient = new QueueClient(connectionString, queueName);
-            _queueClient.CreateIfNotExists();
+            string baseUrl = configuration["AzureFunctions:QueueServiceBaseUrl"]
+                ?? throw new InvalidOperationException("AzureFunctions:QueueServiceBaseUrl configuration missing.");
+
+            _httpClient.BaseAddress = new Uri(baseUrl);
+            _jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
         }
 
-        // ========== SEND ==========
         public async Task SendMessageAsync(Models.QueueMessage message)
         {
             if (message == null)
                 throw new ArgumentNullException(nameof(message));
 
             string json = JsonSerializer.Serialize(message);
-            string base64Message = Convert.ToBase64String(Encoding.UTF8.GetBytes(json));
+            using var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            await _queueClient.SendMessageAsync(base64Message);
+            HttpResponseMessage response = await _httpClient.PostAsync("api/queue/send", content);
+            response.EnsureSuccessStatusCode();
         }
 
-        public async Task SendMessageAsync(string message)
+        public async Task<List<Models.QueueMessage>> ReceiveMessagesAsync(int maxMessages = 10)
         {
-            if (string.IsNullOrWhiteSpace(message))
-                throw new ArgumentException("Message cannot be empty.");
+            HttpResponseMessage response = await _httpClient.GetAsync($"api/queue/receive?maxMessages={maxMessages}");
+            response.EnsureSuccessStatusCode();
 
-            string base64Message = Convert.ToBase64String(Encoding.UTF8.GetBytes(message));
-            await _queueClient.SendMessageAsync(base64Message);
+            string jsonContent = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<List<Models.QueueMessage>>(jsonContent, _jsonOptions)
+                   ?? new List<Models.QueueMessage>();
         }
 
-        
-        public async Task<List<Models.QueueMessage>> ReceiveMessagesAsync(int maxMessages = 10, TimeSpan? visibilityTimeout = null)
-        {
-            var result = new List<Models.QueueMessage>();
-
-            Azure.Storage.Queues.Models.QueueMessage[] messages = await _queueClient.ReceiveMessagesAsync(
-                maxMessages: maxMessages,
-                visibilityTimeout: visibilityTimeout ?? TimeSpan.FromSeconds(30));
-
-            foreach (var msg in messages)
-            {
-                try
-                {
-                    string json = Encoding.UTF8.GetString(Convert.FromBase64String(msg.MessageText));
-                    var queueMessage = JsonSerializer.Deserialize<Models.QueueMessage>(json);
-
-                    if (queueMessage != null)
-                    {
-                        // Keep the Azure message metadata so we can delete it later
-                        queueMessage.MessageId = msg.MessageId;
-                        queueMessage.PopReceipt = msg.PopReceipt;   // needed for deletion
-                        result.Add(queueMessage);
-                    }
-                }
-                catch
-                {
-                    // Skip malformed messages
-                }
-            }
-
-            return result;
-        }
-
-        // ========== PEEK (look at messages without making them invisible) ==========
-        /// <summary>
-        /// Peeks at messages without removing or hiding them.
-        /// Useful for monitoring / admin views.
-        /// </summary>
         public async Task<List<Models.QueueMessage>> PeekMessagesAsync(int maxMessages = 10)
         {
-            var result = new List<Models.QueueMessage>();
+            HttpResponseMessage response = await _httpClient.GetAsync($"api/queue/peek?maxMessages={maxMessages}");
+            response.EnsureSuccessStatusCode();
 
-            PeekedMessage[] messages = await _queueClient.PeekMessagesAsync(maxMessages: maxMessages);
-
-            foreach (var msg in messages)
-            {
-                try
-                {
-                    string json = Encoding.UTF8.GetString(Convert.FromBase64String(msg.MessageText));
-                    var queueMessage = JsonSerializer.Deserialize<Models.QueueMessage>(json);
-
-                    if (queueMessage != null)
-                    {
-                        queueMessage.MessageId = msg.MessageId;
-                        result.Add(queueMessage);
-                    }
-                }
-                catch
-                {
-                    // Skip malformed messages
-                }
-            }
-
-            return result;
+            string jsonContent = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<List<Models.QueueMessage>>(jsonContent, _jsonOptions)
+                   ?? new List<Models.QueueMessage>();
         }
 
-        // ========== DELETE (after successful processing) ==========
         public async Task DeleteMessageAsync(string messageId, string popReceipt)
         {
             if (string.IsNullOrWhiteSpace(messageId) || string.IsNullOrWhiteSpace(popReceipt))
                 throw new ArgumentException("MessageId and PopReceipt are required.");
 
-            await _queueClient.DeleteMessageAsync(messageId, popReceipt);
+            string requestUri = $"api/queue/delete?messageId={Uri.EscapeDataString(messageId)}&popReceipt={Uri.EscapeDataString(popReceipt)}";
+            HttpResponseMessage response = await _httpClient.DeleteAsync(requestUri);
+
+            response.EnsureSuccessStatusCode();
         }
     }
 }

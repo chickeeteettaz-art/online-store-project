@@ -1,51 +1,64 @@
 ﻿using Azure.Data.Tables;
 using online_store_project.Models;
+using System.Text.Json;
 
 namespace online_store_project.Services.TableServices
 {
     public class OrderTableService
     {
-        private readonly TableClient _tableClient;
+        private readonly HttpClient _httpClient;
+        private readonly JsonSerializerOptions _jsonSerializerOptions;
 
-        public OrderTableService(IConfiguration configuration)
+        public OrderTableService(IConfiguration configuration,HttpClient httpClient)
         {
-            //getting the connection string and table name from appsettings.json
-            var connectionString = configuration.GetSection("AzureStorage:ConnectionString").Value;
-            var tableName = configuration.GetSection("AzureStorage:OrderTableName").Value;
-
-            //initializing the TableServiceClient and TableClient
-            var serviceClient = new TableServiceClient(connectionString);
-            _tableClient = serviceClient.GetTableClient(tableName);
-            _tableClient.CreateIfNotExists();
+            _httpClient = httpClient;
+            var baseUrl = configuration["AzureFunctions:OrderTableBaseUrl"]
+                ?? throw new InvalidOperationException("AzureFunctions:OrderTableBaseUrl configuration missing.");
+            _httpClient.BaseAddress = new Uri(baseUrl);
+            _jsonSerializerOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            
         }
 
         //CRUD Operations for OrderEntity
         public async Task AddorUpdateOrderEntityAsync(OrderEntity order)
         {
-            await _tableClient.UpsertEntityAsync(order);
+            if(order==null)
+                throw new ArgumentNullException(nameof(order), "Order entity cannot be null.");
+            
+            var json = JsonSerializer.Serialize(order, _jsonSerializerOptions);
+            using var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+            HttpResponseMessage response = await _httpClient.PostAsync("api/orders/create", content);
+            response.EnsureSuccessStatusCode();
         }
 
         //GET a single order entity by partition key and row key
         public async Task<OrderEntity> GetOrderEntityAsync(string partitionKey, string rowKey)
         {
-            var response = await _tableClient.GetEntityAsync<OrderEntity>(partitionKey, rowKey);
-            return response.Value;
+            HttpResponseMessage response = await _httpClient.GetAsync($"api/orders/getorder?partitionKey={partitionKey}&rowKey={rowKey}");
+            response.EnsureSuccessStatusCode();
+            var json = await response.Content.ReadAsStringAsync();
+
+            return JsonSerializer.Deserialize<OrderEntity>(json, _jsonSerializerOptions) 
+                ?? throw new InvalidOperationException("Failed to deserialize order entity.");
         }
 
         public async Task<List<OrderEntity>> GetAllOrderEntitiesAsync()
         {
-            var entities = new List<OrderEntity>();
-            await foreach (var entity in _tableClient.QueryAsync<OrderEntity>())
-            {
-                entities.Add(entity);
-            }
-            return entities;
+            HttpResponseMessage responseMessage = await _httpClient.GetAsync("api/orders/getall");
+            responseMessage.EnsureSuccessStatusCode();
+
+            var json = await responseMessage.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<List<OrderEntity>>(json, _jsonSerializerOptions) 
+                ?? throw new InvalidOperationException("Failed to deserialize order entities.");
         }
 
         //delete entities
         public async Task DeleteOrderEntityAsync(string partitionKey, string rowKey)
         {
-            await _tableClient.DeleteEntityAsync(partitionKey, rowKey);
+            HttpResponseMessage response = await _httpClient.DeleteAsync($"api/orders/delete?partitionKey={partitionKey}&rowKey={rowKey}");
+            response.EnsureSuccessStatusCode();
+
         }
     }
 }

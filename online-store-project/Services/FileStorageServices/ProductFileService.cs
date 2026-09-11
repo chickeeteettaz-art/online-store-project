@@ -1,96 +1,74 @@
-﻿using Azure;
-using Azure.Storage.Files.Shares;
-using Azure.Storage.Files.Shares.Models;
+﻿using System.Net.Http.Headers;
+using System.Text.Json;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using online_store_project.Models;
 
 namespace online_store_project.Services.FileServices
 {
     public class ProductFileService
     {
-        private readonly ShareClient _shareClient;
+        private readonly HttpClient _httpClient;
+        private readonly JsonSerializerOptions _jsonOptions;
 
-        public ProductFileService(IConfiguration configuration)
+        public ProductFileService(HttpClient httpClient, IConfiguration configuration)
         {
-            string connectionString = configuration["AzureStorage:connectionString"];
-            _shareClient = new ShareClient(connectionString, "productfiles");
-            _shareClient.CreateIfNotExists();
+            _httpClient = httpClient;
+
+            string baseUrl = configuration["AzureFunctions:FileUploadBaseUrl"]
+                ?? throw new InvalidOperationException("AzureFunctions:BaseUrl configuration missing.");
+
+            _httpClient.BaseAddress = new Uri(baseUrl);
+            _jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
         }
 
         public async Task UploadFileAsync(IFormFile file)
         {
             if (file == null || file.Length == 0)
-                throw new ArgumentException("File is empty or null.");
+                throw new ArgumentException("File is empty or null.", nameof(file));
 
-            // Use the original file name (FileName is more reliable than Name)
-            string fileName = Path.GetFileName(file.FileName);
+            using var content = new MultipartFormDataContent();
+            using var stream = file.OpenReadStream();
+            using var streamContent = new StreamContent(stream);
 
-            ShareDirectoryClient directory = _shareClient.GetRootDirectoryClient();
-            ShareFileClient fileClient = directory.GetFileClient(fileName);
+            streamContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType ?? "application/octet-stream");
+            content.Add(streamContent, "file", file.FileName);
 
-            // If the file already exists, delete it first so we can overwrite
-            if (await fileClient.ExistsAsync())
-            {
-                await fileClient.DeleteAsync();
-            }
-
-            // Create the file with the correct size
-            await fileClient.CreateAsync(file.Length);
-
-            // Upload the content
-            using (Stream stream = file.OpenReadStream())
-            {
-                await fileClient.UploadRangeAsync(
-                    new HttpRange(0, stream.Length),
-                    stream);
-            }
+            HttpResponseMessage response = await _httpClient.PostAsync("api/files/upload", content);
+            response.EnsureSuccessStatusCode();
         }
 
         public async Task<List<ProductFile>> GetFilesAsync()
         {
-            var files = new List<ProductFile>();
+            HttpResponseMessage response = await _httpClient.GetAsync("api/files");
+            response.EnsureSuccessStatusCode();
 
-            ShareDirectoryClient directory = _shareClient.GetRootDirectoryClient();
-
-            await foreach (ShareFileItem item in directory.GetFilesAndDirectoriesAsync())
-            {
-                if (!item.IsDirectory)
-                {
-                    files.Add(new ProductFile
-                    {
-                        FileName = item.Name,
-                        FileSize = item.FileSize ?? 0
-                    });
-                }
-            }
-
-            return files;
+            string jsonContent = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<List<ProductFile>>(jsonContent, _jsonOptions) ?? new List<ProductFile>();
         }
 
         public async Task<Stream> DownloadFileAsync(string fileName)
         {
             if (string.IsNullOrWhiteSpace(fileName))
-                throw new ArgumentException("File name is required.");
+                throw new ArgumentException("File name is required.", nameof(fileName));
 
-            ShareDirectoryClient directory = _shareClient.GetRootDirectoryClient();
-            ShareFileClient fileClient = directory.GetFileClient(fileName);
+            HttpResponseMessage response = await _httpClient.GetAsync($"api/files/download?fileName={Uri.EscapeDataString(fileName)}");
 
-            if (!await fileClient.ExistsAsync())
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
                 throw new FileNotFoundException($"File '{fileName}' was not found.");
 
-            ShareFileDownloadInfo download = await fileClient.DownloadAsync();
-            return download.Content;
+            response.EnsureSuccessStatusCode();
+
+            return await response.Content.ReadAsStreamAsync();
         }
 
-        // Optional: Delete a file
         public async Task DeleteFileAsync(string fileName)
         {
             if (string.IsNullOrWhiteSpace(fileName))
-                throw new ArgumentException("File name is required.");
+                throw new ArgumentException("File name is required.", nameof(fileName));
 
-            ShareDirectoryClient directory = _shareClient.GetRootDirectoryClient();
-            ShareFileClient fileClient = directory.GetFileClient(fileName);
-
-            await fileClient.DeleteIfExistsAsync();
+            HttpResponseMessage response = await _httpClient.DeleteAsync($"api/files?fileName={Uri.EscapeDataString(fileName)}");
+            response.EnsureSuccessStatusCode();
         }
     }
 }

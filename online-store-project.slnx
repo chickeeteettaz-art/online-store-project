@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="BlobStorageFunction/BlobStorageFunction.csproj" Id="dfff6ce1-0b96-49a6-8aaa-b4139600d5da" />
+  <Project Path="entities-class-library/entities-class-library.csproj" Id="ebafe0cb-5a8b-4154-b194-0715ea543f5e" />
   <Project Path="FileUploadFunction/FileUploadFunction.csproj" Id="1ea6b3f8-e430-4ccc-8ba2-c052fc6214cf" />
   <Project Path="MessageStoreFunction/MessageStoreFunction.csproj" Id="65ae40cb-c16b-46a2-b530-115efb772f23" />
   <Project Path="online-store-project/online-store-project.csproj" />

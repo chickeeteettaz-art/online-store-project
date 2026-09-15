@@ -1,7 +1,5 @@
 ﻿using System.Net.Http.Headers;
 using System.Text.Json;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Configuration;
 using online_store_project.Models;
 
 namespace online_store_project.Services.FileServices
